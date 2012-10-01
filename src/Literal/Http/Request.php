@@ -4,6 +4,8 @@
  */
 namespace Literal\Http;
 
+use Literal\Common\Parameters\ArrayParameters;
+
 /**
  * HTTP Request class
  */
@@ -15,30 +17,40 @@ class Request
     private $server;
 
     /**
-     * @var array Post data from $_POST
+     * @var ArrayParameters Post data from $_POST
      */
-    private $post = array();
+    private $post;
 
     /**
-     * @var array Query string from $_GET
+     * @var ArrayParameters Query string from $_GET
      */
-    private $query = array();
+    private $query;
 
     /**
-     * @var array The files from $_FILES
+     * @var ArrayParameters The request options (e.g. Used to set the controller and action name)
      */
-    private $files = array();
+    private $options;
 
     /**
-     * @var array The cookies from $_COOKIES
+     * @var ArrayParameters The files from $_FILES
      */
-    private $cookies = array();
+    private $files;
+
+    /**
+     * @var ArrayParameters The session from $_SESSION
+     */
+    private $session;
+
+    /**
+     * @var ArrayParameters The cookies from $_COOKIES
+     */
+    private $cookies;
 
     /**
      * Initializes the request object
      * @param ServerParameters $serverParameters
      */
-    public function __construct($serverParameters)
+    public function __construct(ServerParameters $serverParameters)
     {
         $this->server = $serverParameters;
     }
@@ -54,14 +66,20 @@ class Request
     }
 
     /**
-     * Loads the request and sets the server, post, get, cookies and files data
-     * @param array $data
+     * Loads the request and sets the post, get, cookies and files data
+     * @param ArrayParameters $query
+     * @param ArrayParameters $post
+     * @param ArrayParameters $files
+     * @param ArrayParameters $session
+     * @param ArrayParameters $cookies
+     * @internal param array $data
      */
-    public function load(array $query, array $post, array $files, array $cookies)
+    public function load(ArrayParameters $query, ArrayParameters $post, ArrayParameters $files, ArrayParameters $session, ArrayParameters $cookies)
     {
         $this->query = $query;
         $this->post = $post;
         $this->files = $files;
+        $this->cookies = $session;
         $this->cookies = $cookies;
     }
 
@@ -94,7 +112,7 @@ class Request
     }
 
     /**
-     * Returns the query string E.g. page.php?a=1&b=2 from $_GET
+     * Returns the query string
      * @return array
      */
     public function getQuery()
@@ -147,6 +165,60 @@ class Request
     public function setCookies($var, $value)
     {
         $this->cookies[$var] = $value;
+        return $this;
+    }
+
+    /**
+     * @return \Literal\Common\Parameters\ArrayParameters
+     */
+    public function getOptions()
+    {
+        return $this->options;
+    }
+
+    /**
+     * @return \Literal\Common\Parameters\ArrayParameters
+     */
+    public function getOption($option)
+    {
+        return $this->options[$option];
+    }
+
+    /**
+     * @param \Literal\Common\Parameters\ArrayParameters $options
+     * @return Request
+     */
+    public function setOption($option, $value)
+    {
+        $this->options[$option] = $value;
+        return $this;
+    }
+
+    /**
+     * @param \Literal\Common\Parameters\ArrayParameters $options
+     * @return Request
+     */
+    public function setOptions($options)
+    {
+        $this->options = $options;
+        return $this;
+    }
+
+    /**
+     * @return \Literal\Common\Parameters\ArrayParameters
+     */
+    public function getSession()
+    {
+        return $this->session;
+    }
+
+    /**
+     * @param \Literal\Common\Parameters\ArrayParameters $session
+     * @return Request
+     */
+    public function setSession($session)
+    {
+        $this->session = $session;
         return $this;
     }
 }

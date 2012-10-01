@@ -2,7 +2,7 @@
 /**
  * Literal Framework
  */
-namespace Literal\Routing;
+namespace Literal\Routing\Resolver;
 
 use Literal\Common\Parameters\ArrayParameters;
 

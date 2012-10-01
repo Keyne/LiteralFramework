@@ -4,13 +4,16 @@
  */
 namespace Literal\Routing;
 
-use \Literal\Http\Request,
-    Literal\Common\Parameters\ArrayParameters;
+use Literal\Http\Request,
+    Literal\Common\Parameters\ArrayParameters,
+    Literal\Routing\Resolver\RouteResolverInterface,
+    Literal\Routing\Route\Route,
+    Literal\Routing\Exception\RouteNotFound;
 
 /**
  * The router component
  */
-class Router
+class Router implements RouterInterface
 {
     /**
      * @var ArrayParameters The available routes
@@ -18,15 +21,15 @@ class Router
     private $routes;
 
     /**
-     * @var RouteResolver The default route resolver
+     * @var RouteResolverInterface The default route resolver
      */
     private $defaultRouteResolver;
 
     /**
      * @param ArrayParameters $routes
-     * @param RouteResolver $defaultRouteResolver
+     * @param RouteResolverInterface $defaultRouteResolver
      */
-    public function __construct(ArrayParameters $routes = null, RouteResolver $defaultRouteResolver = null)
+    public function __construct(ArrayParameters $routes = null, RouteResolverInterface $defaultRouteResolver = null)
     {
         if(!$routes) {
             $routes = new ArrayParameters();
@@ -65,15 +68,15 @@ class Router
     /**
      * Returns the routing matching the request
      * @param Request $request
-     * @throws \InvalidArgumentException
+     * @throws RouteNotFound
      * @return Route
      */
-    public function process(Request $request) {
+    public function getRequestRoute(Request $request) {
         foreach($this->routes as $route) {
             /**
              * Checks if the route matches the pattern.
              * @var Route $route
-             * @var RouteResolver $routeResolver
+             * @var RouteResolverInterface $routeResolver
              */
             $routeResolver = $route->getRouteResolver();
             if(!$routeResolver) {
@@ -85,17 +88,17 @@ class Router
             // If yes, sets the parameters
             if($matches) {
                 $route->setParameters($matches);
+                $route->resolveTarget();
                 return $route;
             }
         }
 
-        // TODO: Throws an RouteNotFoundException
-        throw new \InvalidArgumentException('No matching routes found for: ' . $request->getPathInfo());
+        throw new RouteNotFound('No matching routes found for: ' . $request->getPathInfo());
     }
 
     /**
      * @throws \RuntimeException
-     * @return \Literal\Routing\RouteResolver
+     * @return \Literal\Routing\RouteResolverInterface
      */
     public function getDefaultRouteResolver()
     {
@@ -106,10 +109,10 @@ class Router
     }
 
     /**
-     * @param RouteResolver $defaultRouteResolver
+     * @param RouteResolverInterface $defaultRouteResolver
      * @return Router
      */
-    public function setDefaultRouteResolver(RouteResolver $defaultRouteResolver)
+    public function setDefaultRouteResolver(RouteResolverInterface $defaultRouteResolver)
     {
         $this->defaultRouteResolver = $defaultRouteResolver;
         return $this;

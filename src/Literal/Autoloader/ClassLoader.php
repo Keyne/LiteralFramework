@@ -22,16 +22,34 @@ class ClassLoader
         $namespace = array_shift($classNameParts);
 
         if(!isset($this->namespaceMap[$namespace])) {
-            throw new \BadMethodCallException('Class not found: ' . $className);
+            return;
+            // throw new \BadMethodCallException('Class not found: ' . $className);
         }
 
         $filePath = implode(DIRECTORY_SEPARATOR, $classNameParts);
         $filePath = $this->namespaceMap[$namespace] . DIRECTORY_SEPARATOR . $filePath . '.php';
+
+        if(!file_exists($filePath)) {
+            return;
+        }
+
         require $filePath;
     }
 
+    /**
+     * @param $namespace
+     * @param $path
+     */
     public function registerNamespace($namespace, $path)
     {
         $this->namespaceMap[$namespace] = $path;
+    }
+
+    /**
+     * Registers the autoloader within the spl autoload
+     */
+    public function registerAutoloader()
+    {
+        spl_autoload_register(array($this, 'load'));
     }
 }

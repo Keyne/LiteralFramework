@@ -54,7 +54,7 @@ class Response
      *
      * @var array
      */
-    static public $statusTexts = array(
+    static public $statusCodes = array(
         100 => 'Continue',
         101 => 'Switching Protocols',
         102 => 'Processing',            // RFC2518
@@ -233,10 +233,10 @@ class Response
     {
         // headers have already been sent by the developer
         if (headers_sent()) {
-            return $this;
+            throw new \RuntimeException('Headers already sent');
         }
 
-        // status
+        // Builds the header
         header(sprintf('HTTP/%s %s %s', $this->version, $this->statusCode, $this->statusText));
 
         // headers
@@ -246,24 +246,16 @@ class Response
             }
         }
 
-        // cookies
-        /*
-        foreach ($this->headers->getCookies() as $cookie) {
-            setcookie($cookie->getName(), $cookie->getValue(), $cookie->getExpiresTime(), $cookie->getPath(), $cookie->getDomain(), $cookie->isSecure(), $cookie->isHttpOnly());
-        }
-        */
         return $this;
     }
 
     /**
-     * Sends content for the current web response.
-     *
+     * Sends content to the browser.
      * @return Response
      */
     public function sendContent()
     {
         echo $this->content;
-
         return $this;
     }
 
@@ -282,38 +274,25 @@ class Response
         if (function_exists('fastcgi_finish_request')) {
             fastcgi_finish_request();
         }
-
-        return $this;
     }
 
     /**
      * Sets the response content.
-     *
-     * Valid types are strings, numbers, and objects that implement a __toString() method.
-     *
-     * @param mixed $content
-     *
+     * @param string $content
      * @return Response
-     *
-     * @api
      */
     public function setContent($content)
     {
-        if (null !== $content && !is_string($content) && !is_numeric($content) && !is_callable(array($content, '__toString'))) {
-            throw new \UnexpectedValueException('The Response content must be a string or object implementing __toString(), "'.gettype($content).'" given.');
+        if (!is_string($content)) {
+            throw new \InvalidArgumentException('The Response content must be a string.');
         }
-
-        $this->content = (string) $content;
-
+        $this->content = $content;
         return $this;
     }
 
     /**
-     * Gets the current response content.
-     *
-     * @return string Content
-     *
-     * @api
+     * Returns the response content.
+     * @return string
      */
     public function getContent()
     {
@@ -321,63 +300,23 @@ class Response
     }
 
     /**
-     * Sets the HTTP protocol version (1.0 or 1.1).
-     *
-     * @param string $version The HTTP protocol version
-     *
-     * @return Response
-     *
-     * @api
-     */
-    public function setProtocolVersion($version)
-    {
-        $this->version = $version;
-
-        return $this;
-    }
-
-    /**
-     * Gets the HTTP protocol version.
-     *
-     * @return string The HTTP protocol version
-     *
-     * @api
-     */
-    public function getProtocolVersion()
-    {
-        return $this->version;
-    }
-
-    /**
      * Sets the response status code.
-     *
-     * @param integer $code HTTP status code
-     * @param string  $text HTTP status text
-     *
-     * @return Response
-     *
+     * @param int $code HTTP status code
      * @throws \InvalidArgumentException When the HTTP status code is not valid
-     *
-     * @api
+     * @return Response
      */
-    public function setStatusCode($code, $text = null)
+    public function setStatusCode($code)
     {
-        $this->statusCode = (int) $code;
-        if ($this->isInvalid()) {
-            throw new \InvalidArgumentException(sprintf('The HTTP status code "%s" is not valid.', $code));
+        if(!array_key_exists($code, $this->statusCodes)) {
+            throw new \InvalidArgumentException('Invalid response status code');
         }
-
-        $this->statusText = false === $text ? '' : (null === $text ? self::$statusTexts[$this->statusCode] : $text);
-
+        $this->statusCode = $code;
         return $this;
     }
 
     /**
-     * Retrieves the status code for the current web response.
-     *
-     * @return string Status code
-     *
-     * @api
+     * Returns the response status code
+     * @return int
      */
     public function getStatusCode()
     {
@@ -386,54 +325,21 @@ class Response
 
     /**
      * Sets the response charset.
-     *
-     * @param string $charset Character set
-     *
+     * @param string $charset
      * @return Response
-     *
-     * @api
      */
     public function setCharset($charset)
     {
         $this->charset = $charset;
-
         return $this;
     }
 
     /**
-     * Retrieves the response charset.
-     *
-     * @return string Character set
-     *
-     * @api
+     * Returns the response charset
+     * @return string
      */
     public function getCharset()
     {
         return $this->charset;
-    }
-
-    // http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html
-    /**
-     * Is response invalid?
-     *
-     * @return Boolean
-     *
-     * @api
-     */
-    public function isInvalid()
-    {
-        return $this->statusCode < 100 || $this->statusCode >= 600;
-    }
-
-    /**
-     * Is response informative?
-     *
-     * @return Boolean
-     *
-     * @api
-     */
-    public function isInformational()
-    {
-        return $this->statusCode >= 100 && $this->statusCode < 200;
     }
 }

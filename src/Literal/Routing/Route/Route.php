@@ -2,9 +2,10 @@
 /**
  * Literal Framework
  */
-namespace Literal\Routing;
+namespace Literal\Routing\Route;
 
-use Literal\Common\Parameters\ArrayParameters;
+use Literal\Common\Parameters\ArrayParameters,
+    Literal\Routing\Resolver\RouteResolverInterface;
 
 /**
  * The Route class representing a pattern to match and the target
@@ -20,7 +21,7 @@ use Literal\Common\Parameters\ArrayParameters;
  * Target: "UsersController::viewAction"
  *
  */
-class Route
+class Route implements RouteInterface
 {
     /**
      * @var RouteResolverInterface The route resolver
@@ -36,11 +37,6 @@ class Route
      * @var string The target controller
      */
     private $target;
-
-    /**
-     * @var RouteTargetBuilderInterface Builder responsible for creating the target object
-     */
-    private $routeTargetBuilder;
 
     /**
      * @var string The resolve target (with its placeholders replaced if any)
@@ -65,15 +61,10 @@ class Route
      */
     public function __construct($pattern,
                                 $target,
-                                RouteTargetBuilderInterface $routeTargetBuilder = null,
                                 RouteResolverInterface $routerResolver = null)
     {
         $this->pattern = $pattern;
         $this->target  = $target;
-
-        if($routeTargetBuilder) {
-            $this->routeTargetBuilder = $routeTargetBuilder;
-        }
 
         if($routerResolver) {
             $this->routerResolver = $routerResolver;
@@ -95,24 +86,6 @@ class Route
     public function setRouteResolver(RouteResolverInterface $routerResolver)
     {
         $this->routeResolver = $routerResolver;
-        return $this;
-    }
-
-    /**
-     * @return RouteResolverInterface|null
-     */
-    public function getRouteTargetBuilder()
-    {
-        return $this->routeTargetBuilder;
-    }
-
-    /**
-     * @param RouteResolverInterface $routerResolver
-     * @return $this
-     */
-    public function setRouteTargetBuilder(RouteTargetBuilderInterface $builder)
-    {
-        $this->routeTargetBuilder = $builder;
         return $this;
     }
 
@@ -159,9 +132,20 @@ class Route
     }
 
     /**
+     * @throws \RuntimeException
+     * @return string The target class
+     */
+    public function getResolvedTarget()
+    {
+        if(!$this->resolvedTarget) {
+            throw new \RuntimeException('Target not resolved. You must call resolveTarget() first');
+        }
+        return $this->resolvedTarget;
+    }
+
+    /**
      * Resolves the target and filter its parameters
-     * @param string $target
-     * @param array $params
+     * @return string
      */
     public function resolveTarget()
     {
