@@ -32,6 +32,10 @@ class ListenersFactory implements FactoryInterface
      */
     public function build($class, array $args = array())
     {
+        // Pass the injector as an argument for all listeners
+        $args['injector'] = $this->injector;
+
+        // Builds the listener
         return $this->injector->build($class, $args);
     }
 }

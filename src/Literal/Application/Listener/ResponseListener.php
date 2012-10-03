@@ -6,8 +6,8 @@ namespace Literal\Application\Listener;
 
 use Literal\Http\Response,
     Literal\Application\Event\RequestEvent,
-    Literal\View\Model\ViewModel,
-    Literal\View\Template\Renderer;
+    Literal\View\ViewFactory,
+    Literal\View\View;
 
 /**
  * Response builder listener
@@ -15,16 +15,64 @@ use Literal\Http\Response,
 class ResponseListener
 {
     /**
+     * @var ViewFactory
+     */
+    private $viewFactory;
+
+    /**
+     * @param ViewFactory $viewFactory
+     */
+    public function __construct(ViewFactory $viewFactory)
+    {
+        $this->viewFactory = $viewFactory;
+    }
+
+    /**
      * Initializes the response
      * @param RequestEvent $requestEvent
+     * @throws \UnexpectedValueException
      * @return RequestEvent
      */
     public function init(RequestEvent $requestEvent)
     {
-        $response = $this->buildResponse($requestEvent->getResult());
+        $result = $requestEvent->getResult();
+
+        if($result instanceof Response) {
+            $response = $result;
+        } elseif($result instanceof View) {
+            $response = $this->buildResponse($result);
+        } elseif(is_array($result)) {
+            $request = $requestEvent->getRequest();
+            $controller = $request->getOption('controller');
+            $action = $request->getOption('action');
+
+            $view = $this->viewFactory->buildDefault($controller, $action);
+            $variables = $view->getVariables();
+            $variables->exchangeArray($result);
+            $response = $this->buildResponse($view);
+        } else {
+            throw new \UnexpectedValueException('Invalid request result');
+        }
+
         $requestEvent->setResponse($response);
 
         return $requestEvent;
+    }
+
+    /**
+     * Builds the response object
+     * @param View $view
+     * @return Response
+     */
+    public function buildResponse(View $view)
+    {
+        $content = $view->render();
+
+        $response = new Response();
+        $response->setStatusCode(200);
+        $response->setContent($content);
+
+        return $response;
     }
 
     /**
@@ -35,54 +83,5 @@ class ResponseListener
     {
         $response = $requestEvent->getResponse();
         $response->send();
-    }
-
-    /**
-     * Builds the request object
-     * @param ViewModel|string $viewModel
-     * @throws \UnexpectedValueException
-     * @return Response
-     */
-    public function buildResponse($viewModel)
-    {
-        if($viewModel instanceof ViewModel) {
-            $content = $this->renderTemplate($viewModel);
-        } elseif(is_string($viewModel)) {
-            $content = $viewModel;
-        } else {
-            throw new \UnexpectedValueException('Expected a ViewModel or a string representing the response body content');
-        }
-
-        $response = new Response();
-        $response->setStatusCode(200);
-        $response->setContent($content);
-
-        return $response;
-    }
-
-    /**
-     * Builds the template renderer
-     * @return Renderer
-     */
-    public function buildTemplateRenderer()
-    {
-        $viewRenderer = new Renderer();
-
-        return $viewRenderer;
-    }
-
-    /**
-     * Renders the template and returns the content
-     * @param ViewModel $viewModel
-     * @return string
-     */
-    public function renderTemplate(ViewModel $viewModel)
-    {
-        $renderer = $this->buildTemplateRenderer();
-
-        $templatePath = $viewModel->getTemplatePath();
-        $content = $renderer->renderTemplate($templatePath, $viewModel);
-
-        return $content;
     }
 }

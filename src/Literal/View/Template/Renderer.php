@@ -4,7 +4,7 @@
  */
 namespace Literal\View\Template;
 
-use Literal\View\Model\ViewModel;
+use Literal\View\View;
 
 /**
  * Template Renderer
@@ -12,20 +12,20 @@ use Literal\View\Model\ViewModel;
 class Renderer
 {
     /**
-     * @param string $templatePath
-     * @param ViewModel $viewModel
+     * @param string $templateFile
+     * @param View $view
      * @return string
      * @throws \InvalidArgumentException
      */
-    public function renderTemplate($templatePath, ViewModel $viewModel)
+    public function renderTemplate($templateFile, View $view)
     {
-        if(!file_exists($templatePath)) {
+        if(!file_exists($templateFile)) {
             throw new \InvalidArgumentException('Template not found');
         }
 
         ob_start();
-        extract(array('viewModel' => $viewModel));
-        include $templatePath;
+        extract(array('view' => $view));
+        include $templateFile;
         $content = ob_get_clean();
 
         return $content;

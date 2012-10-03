@@ -39,7 +39,24 @@ $config = array(
             )
         ),
         'ResponseListener' => array(
-            'class' => 'Literal\\Application\\Listener\\ResponseListener'
+            'class' => 'Literal\\Application\\Listener\\ResponseListener',
+            'constructor' => array(
+                'viewFactory' => '@ViewFactory'
+            )
+        ),
+
+        // View
+        'View' => array(
+            'class' => 'Literal\\View\\View',
+            'constructor' => array(
+                'renderer' => '@TemplateEngine'
+            )
+        ),
+        'TemplateEngine' => array(
+            'class' => 'Literal\\View\\Template\\Renderer'
+        ),
+        'ViewFactory' => array(
+            'class' => 'Literal\\View\\ViewFactory'
         ),
 
         // Default error controller

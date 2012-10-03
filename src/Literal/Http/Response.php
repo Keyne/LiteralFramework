@@ -54,7 +54,7 @@ class Response
      *
      * @var array
      */
-    static public $statusCodes = array(
+    private $statusCodes = array(
         100 => 'Continue',
         101 => 'Switching Protocols',
         102 => 'Processing',            // RFC2518
@@ -118,148 +118,6 @@ class Response
     );
 
     /**
-     * Constructor.
-     *
-     * @param string  $content The response content
-     * @param integer $status  The response status code
-     * @param array   $headers An array of response headers
-     *
-     * @api
-     */
-    public function __construct($content = '', $status = 200, $headers = array())
-    {
-        $this->headers = $headers;
-        $this->setContent($content);
-        $this->setStatusCode($status);
-        $this->setProtocolVersion('1.0');
-    }
-
-    /**
-     * Factory method for chainability
-     *
-     * Example:
-     *
-     *     return Response::create($body, 200)
-     *         ->setSharedMaxAge(300);
-     *
-     * @param string  $content The response content
-     * @param integer $status  The response status code
-     * @param array   $headers An array of response headers
-     *
-     * @return Response
-     */
-    static public function create($content = '', $status = 200, $headers = array())
-    {
-        return new static($content, $status, $headers);
-    }
-
-    /**
-     * Returns the Response as an HTTP string.
-     *
-     * The string representation of the Response is the same as the
-     * one that will be sent to the client only if the prepare() method
-     * has been called before.
-     *
-     * @return string The Response as an HTTP string
-     *
-     * @see prepare()
-     */
-    public function __toString()
-    {
-        return
-            sprintf('HTTP/%s %s %s', $this->version, $this->statusCode, $this->statusText)."\r\n".
-            $this->headers."\r\n".
-            $this->getContent();
-    }
-
-    /**
-     * Prepares the Response before it is sent to the client.
-     *
-     * This method tweaks the Response to ensure that it is
-     * compliant with RFC 2616. Most of the changes are based on
-     * the Request that is "associated" with this Response.
-     *
-     * @param Request $request A Request instance
-     * @return Response The current response.
-     */
-    public function prepare(Request $request)
-    {
-        $headers = $this->headers;
-
-        if ($this->isInformational() || in_array($this->statusCode, array(204, 304))) {
-            $this->setContent('');
-        }
-
-        // Content-type based on the Request
-        if (!$headers->has('Content-Type')) {
-            $format = $request->getRequestFormat();
-            if (null !== $format && $mimeType = $request->getMimeType($format)) {
-                $headers->set('Content-Type', $mimeType);
-            }
-        }
-
-        // Fix Content-Type
-        $charset = $this->charset ?: 'UTF-8';
-        if (!$headers->has('Content-Type')) {
-            $headers->set('Content-Type', 'text/html; charset='.$charset);
-        } elseif (0 === strpos($headers->get('Content-Type'), 'text/') && false === strpos($headers->get('Content-Type'), 'charset')) {
-            // add the charset
-            $headers->set('Content-Type', $headers->get('Content-Type').'; charset='.$charset);
-        }
-
-        // Fix Content-Length
-        if ($headers->has('Transfer-Encoding')) {
-            $headers->remove('Content-Length');
-        }
-
-        if ('HEAD' === $request->getMethod()) {
-            // cf. RFC2616 14.13
-            $length = $headers->get('Content-Length');
-            $this->setContent('');
-            if ($length) {
-                $headers->set('Content-Length', $length);
-            }
-        }
-
-        return $this;
-    }
-
-    /**
-     * Sends HTTP headers.
-     *
-     * @return Response
-     */
-    public function sendHeaders()
-    {
-        // headers have already been sent by the developer
-        if (headers_sent()) {
-            throw new \RuntimeException('Headers already sent');
-        }
-
-        // Builds the header
-        header(sprintf('HTTP/%s %s %s', $this->version, $this->statusCode, $this->statusText));
-
-        // headers
-        foreach ($this->headers as $name => $values) {
-            foreach ($values as $value) {
-                header($name.': '.$value, false);
-            }
-        }
-
-        return $this;
-    }
-
-    /**
-     * Sends content to the browser.
-     * @return Response
-     */
-    public function sendContent()
-    {
-        echo $this->content;
-        return $this;
-    }
-
-    /**
      * Sends HTTP headers and content.
      *
      * @return Response
@@ -268,12 +126,7 @@ class Response
      */
     public function send()
     {
-        $this->sendHeaders();
-        $this->sendContent();
-
-        if (function_exists('fastcgi_finish_request')) {
-            fastcgi_finish_request();
-        }
+        echo $this->getContent();
     }
 
     /**
@@ -311,7 +164,6 @@ class Response
             throw new \InvalidArgumentException('Invalid response status code');
         }
         $this->statusCode = $code;
-        return $this;
     }
 
     /**

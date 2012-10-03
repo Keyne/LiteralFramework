@@ -11,7 +11,9 @@ use Literal\Controller\Controller,
 
 
 /**
- * MVC FrontController
+ * Error Controller
+ *
+ * Handles the application's errors
  */
 class ErrorController extends Controller implements ErrorControllerInterface
 {

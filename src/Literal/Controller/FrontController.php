@@ -47,7 +47,9 @@ class FrontController implements FrontControllerInterface
         // Creates the request event
         $requestEvent = $this->buildRequestEvent();
 
-        // Mounts the event signals chain
+        // Mounts the signals chain
+        // (all signals are included with exception of dispatch.error and response.send, which is handled at the end
+        // of this code)
         $signals = array(
             'request.init', // Starts the request
             'route.init', // Resolves the request route
@@ -55,7 +57,7 @@ class FrontController implements FrontControllerInterface
             'response.init', // Prepares the response
         );
 
-        // Trigger the events
+        // Sends the signals
         try {
             foreach($signals as $signal) {
                 $result = $this->eventHandler->trigger($signal, $requestEvent);
@@ -79,10 +81,10 @@ class FrontController implements FrontControllerInterface
 
     /**
      * Dispatches the request and sends the response to the browser
+     * (Just a proxy method)
      */
     public function dispatch()
     {
-        $response = $this->processRequest();
-        $response->send();
+        $this->processRequest();
     }
 }
